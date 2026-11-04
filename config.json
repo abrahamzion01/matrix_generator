@@ -1,7 +1,7 @@
 {
-    "color": "green",
-    "delay": 4,
-    "bold": false,
+    "color": "blue",
+    "delay": 6,
+    "bold": true,
     "katakana": false,
     "rainbow": false
 }

@@ -1,6 +1,7 @@
 import json
 import argparse
 import curses
+from logging import config
 import random
 import string
 import time
@@ -22,6 +23,7 @@ RAINBOW = [
     "cyan", "magenta", "white"
 ]
 def load_config():
+
     try:
         with open("config.json", "r") as file:
             return json.load(file)
@@ -34,6 +36,11 @@ def load_config():
             "katakana": False,
             "rainbow": False
         }
+
+
+def save_config(config):
+    with open("config.json", "w") as file:
+        json.dump(config, file, indent=4)
 
 
 def get_characters(use_katakana):
@@ -80,6 +87,15 @@ def main(stdscr, args):
     args.rainbow = (
         args.rainbow if args.rainbow is not None else config["rainbow"]
     )
+
+    if args.save_config:
+        save_config({
+            "color": args.color,
+            "delay": args.delay,
+            "bold": args.bold,
+            "katakana": args.katakana,
+            "rainbow": args.rainbow
+        })
 
     curses.curs_set(0)
     stdscr.nodelay(True)
@@ -289,6 +305,11 @@ def parse_arguments():
         choices=range(0, 11),
         default=None,
         help="Animation delay level from 0 to 10 (default: 4)"
+    )
+    parser.add_argument(
+        "--save-config",
+        action="store_true",
+        help="Save the current settings to config.json"
     )
 
     color_group = parser.add_mutually_exclusive_group()
