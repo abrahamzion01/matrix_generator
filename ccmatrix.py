@@ -38,6 +38,7 @@ def create_streams(width, height, base_delay):
             "column": column,
             "row": random.randint(-height, 0),
             "trail": [],
+            "max_length": random.randint(5, 15),
             "interval": base_delay * random.uniform(0.6, 1.4),
             "next_move": time.monotonic() + random.uniform(0, 2),
         })
@@ -77,9 +78,11 @@ def main(stdscr, args):
     characters = get_characters(args.katakana)
 
     rainbow_position = 0
+    paused = False
 
     while True:
         now = time.monotonic()
+        
 
         new_height, new_width = stdscr.getmaxyx()
 
@@ -88,6 +91,16 @@ def main(stdscr, args):
             streams = create_streams(width, height, base_delay)
 
         key = stdscr.getch()
+        if key == ord(" "):
+            paused = not paused
+            if key == ord("q"):
+                break
+
+        if paused:
+            curses.napms(50)
+            continue
+
+        now = time.monotonic()
 
         if key == curses.KEY_RESIZE:
             continue
@@ -118,7 +131,7 @@ def main(stdscr, args):
                     (stream["row"], character)
                 )
 
-                if len(stream["trail"]) > 10:
+                if len(stream["trail"]) > stream["max_length"]:
                     stream["trail"].pop(0)
 
                 stream["row"] += 1
@@ -153,9 +166,15 @@ def main(stdscr, args):
                     attribute = curses.color_pair(
                         color_numbers[color_name]
                     )
-                else:
-                    attribute = curses.A_NORMAL
+                    if args.bold:
+                        attribute |= curses.A_BOLD
 
+                    if index < 3:
+                        attribute |= curses.A_BOLD
+                    elif index >= 7:
+                        attribute |= curses.A_DIM
+                else:
+                        attribute = curses.A_NORMAL
                 try:
                     stdscr.addstr(
                         trail_row,
@@ -174,6 +193,8 @@ def main(stdscr, args):
                         curses.color_pair(color_numbers["white"])
                         if use_colors else curses.A_NORMAL
                     )
+                    if args.bold:
+                        attribute |= curses.A_BOLD
 
                     try:
                         stdscr.addstr(
@@ -235,6 +256,12 @@ def parse_arguments():
         "--katakana",
         action="store_true",
         help="Use half-width Katakana characters"
+    )
+    parser.add_argument(
+    "-b",
+    "--bold",
+    action="store_true",
+    help="Display bold falling characters"
     )
 
     return parser.parse_args()
