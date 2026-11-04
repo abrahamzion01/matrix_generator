@@ -1,4 +1,4 @@
-
+import json
 import argparse
 import curses
 import random
@@ -21,6 +21,19 @@ RAINBOW = [
     "green", "red", "blue", "yellow",
     "cyan", "magenta", "white"
 ]
+def load_config():
+    try:
+        with open("config.json", "r") as file:
+            return json.load(file)
+
+    except FileNotFoundError:
+        return {
+            "color": "green",
+            "delay": 4,
+            "bold": False,
+            "katakana": False,
+            "rainbow": False
+        }
 
 
 def get_characters(use_katakana):
@@ -47,6 +60,27 @@ def create_streams(width, height, base_delay):
 
 
 def main(stdscr, args):
+    config = load_config()
+    args.delay = (
+        args.delay if args.delay is not None else config["delay"]
+    )
+
+    args.color = (
+        args.color if args.color is not None else config["color"]
+    )
+
+    args.bold = (
+        args.bold if args.bold is not None else config["bold"]
+    )
+
+    args.katakana = (
+        args.katakana if args.katakana is not None else config["katakana"]
+    )
+
+    args.rainbow = (
+        args.rainbow if args.rainbow is not None else config["rainbow"]
+    )
+
     curses.curs_set(0)
     stdscr.nodelay(True)
     stdscr.keypad(True)
@@ -93,7 +127,7 @@ def main(stdscr, args):
         key = stdscr.getch()
         if key == ord(" "):
             paused = not paused
-            if key == ord("q"):
+            if key == ord("q") or key == ord("Q"):
                 break
 
         if paused:
@@ -206,6 +240,29 @@ def main(stdscr, args):
                     except curses.error:
                         pass
 
+                if args.message:
+                    message = args.message[:width]
+
+                    message_row = height // 2
+                    message_col = (width - len(message)) // 2
+
+                    message_attribute = curses.A_BOLD
+
+                    if use_colors:
+                        message_attribute |= curses.color_pair(
+                            color_numbers["white"]
+                        )
+
+                        try:
+                            stdscr.addstr(
+                                message_row,
+                                message_col,
+                                message,
+                                message_attribute
+                            )
+                        except curses.error:
+                            pass
+
         stdscr.refresh()
 
         rainbow_position += 1
@@ -230,7 +287,7 @@ def parse_arguments():
         "--delay",
         type=int,
         choices=range(0, 11),
-        default=4,
+        default=None,
         help="Animation delay level from 0 to 10 (default: 4)"
     )
 
@@ -240,7 +297,7 @@ def parse_arguments():
         "-C",
         "--color",
         choices=COLORS.keys(),
-        default="green",
+        default=None,
         help="Choose the trail colour"
     )
 
@@ -248,6 +305,7 @@ def parse_arguments():
         "-r",
         "--rainbow",
         action="store_true",
+        default=None,
         help="Enable rainbow trail colours"
     )
 
@@ -255,14 +313,24 @@ def parse_arguments():
         "-c",
         "--katakana",
         action="store_true",
+        default=None,
         help="Use half-width Katakana characters"
     )
     parser.add_argument(
-    "-b",
-    "--bold",
-    action="store_true",
-    help="Display bold falling characters"
+        "-b",
+        "--bold",
+        action="store_true",
+        default=None,
+        help="Display bold falling characters"
     )
+    parser.add_argument(
+        "-m",
+        "--message",
+        type=str,
+        default=None,
+        help="Display a custom message in the Matrix"
+)
+
 
     return parser.parse_args()
 
